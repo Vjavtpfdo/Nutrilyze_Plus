@@ -1,13 +1,20 @@
+#components/health_form.py
 import streamlit as st
 
 def get_user_health_inputs():
-    st.header("🩺 Your Health & Taste Preferences")
+    st.subheader("💊 Select Your Health Condition")
+    st.write("This will help us recommend recipes suited to your health needs.")
 
-    condition = st.selectbox("Select your health condition:", [
-        "None", "Diabetes", "Hypertension", "PCOS", "Obesity", "Cholesterol",
-        "Vitamin Deficiency", "Cold", "Anti-inflammatory", "Energy Boost", "Easy Digest"
-    ])
-    
-    taste = st.radio("Choose your preferred taste:", ["Savory", "Spicy", "Sweet", "Tangy", "No Preference"])
+    health_condition = st.selectbox(
+        "Choose your current health condition:",
+        ["None", "PCOS", "Hypertension", "Cold", "Diabetes", "Acidity",
+         "Thyroid Issues", "Weight Loss", "High Cholesterol"]
+    )
 
-    return condition, taste
+    st.subheader("😋 Choose Your Taste Preference")
+    taste_preference = st.selectbox(
+        "What type of taste do you prefer?",
+        ["Any", "Spicy", "Savory", "Sweet", "Tangy"]
+    )
+
+    return health_condition, taste_preference
