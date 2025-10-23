@@ -1,6 +1,6 @@
 #styles.py
+import streamlit as st
 def inject_custom_css():
-    import streamlit as st
     st.markdown(
         """
         <style>
@@ -107,3 +107,5 @@ def inject_custom_css():
         """,
         unsafe_allow_html=True,
     )
+
+    

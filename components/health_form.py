@@ -1,20 +1,32 @@
-#components/health_form.py
+# components/health_form.py
 import streamlit as st
 
 def get_user_health_inputs():
-    st.subheader("💊 Select Your Health Condition")
-    st.write("This will help us recommend recipes suited to your health needs.")
+    st.markdown("<h2 style='text-align: center;'>💊 Select Your Health Condition</h2>", unsafe_allow_html=True)
 
-    health_condition = st.selectbox(
-        "Choose your current health condition:",
-        ["None", "PCOS", "Hypertension", "Cold", "Diabetes", "Acidity",
-         "Thyroid Issues", "Weight Loss", "High Cholesterol"]
-    )
+    conditions = {
+        "Diabetes": "🚫 Low sugar, focus on balanced meals",
+        "High Cholesterol": "❤️ Heart healthy & low-fat options",
+        "Eye Health": "👀 Rich in Vitamin A & antioxidants",
+        "Hypothyroidism": "🌀 Balanced iodine & metabolism-friendly foods",
+    }
 
-    st.subheader("😋 Choose Your Taste Preference")
-    taste_preference = st.selectbox(
-        "What type of taste do you prefer?",
-        ["Any", "Spicy", "Savory", "Sweet", "Tangy"]
-    )
+    # initialize
+    if "health_condition" not in st.session_state:
+        st.session_state.health_condition = None
 
-    return health_condition, taste_preference
+    cols = st.columns(2)
+    for i, (cond, desc) in enumerate(conditions.items()):
+        with cols[i % 2]:
+            # show as big button
+            if st.button(cond, key=f"cond_{cond}", use_container_width=True):
+                st.session_state.health_condition = cond
+            st.markdown(
+                f"<div style='background:#f9f9f9; border-radius:12px; padding:10px; text-align:center; font-size:14px;margin-top:6px'>{desc}</div>",
+                unsafe_allow_html=True
+            )
+
+    if st.session_state.get("health_condition"):
+        st.success(f"✅ Selected: {st.session_state.health_condition}")
+
+    return st.session_state.get("health_condition")

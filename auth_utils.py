@@ -1,56 +1,72 @@
-# auth_utils.py
+#auth_utils.py
 import sqlite3
 import hashlib
+from pathlib import Path
+from typing import Tuple
 
-DB_PATH = "users.db"
+DB_PATH = Path(__file__).resolve().parent / "users.db"
+
+
+def _connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA foreign_keys = ON;")
+    return conn
+
 
 def init_db():
-    """Initialize the SQLite database with the users table."""
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL
-        )
-    """)
-    conn.commit()
-    conn.close()
+    with _connect() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                password_hash TEXT NOT NULL
+            )
+        """)
+
 
 def hash_password(password: str) -> str:
-    """Return a SHA-256 hash of the password."""
     return hashlib.sha256(password.encode()).hexdigest()
 
+
+def _normalize_username(username: str) -> str:
+    return " ".join(username.strip().split())
+
+
 def create_user(username: str, password: str) -> bool:
-    """Create a new user with a hashed password. Returns True if successful."""
+    uname = _normalize_username(username)
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO users (username, password_hash) VALUES (?, ?)",
-            (username.strip(), hash_password(password))
-        )
-        conn.commit()
-        conn.close()
+        with _connect() as conn:
+            conn.execute(
+                "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+                (uname, hash_password(password))
+            )
         return True
     except sqlite3.IntegrityError:
-        # Username already exists
         return False
 
-def validate_user(username: str, password: str) -> bool:
-    """Check if a username/password pair is valid."""
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("SELECT password_hash FROM users WHERE username = ?", (username.strip(),))
-    row = cur.fetchone()
-    conn.close()
-    if row:
-        stored_hash = row[0]
-        return stored_hash == hash_password(password)
-    return False
 
-# Run only when executed directly to set up DB
-if __name__ == "__main__":
-    init_db()
-    print("Database initialized with users table.")
+def validate_user(username: str, password: str) -> bool:
+    uname = _normalize_username(username)
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT password_hash FROM users WHERE username = ? COLLATE NOCASE",
+            (uname,)
+        ).fetchone()
+    return bool(row and row[0] == hash_password(password))
+
+
+def user_exists(username: str) -> bool:
+    uname = _normalize_username(username)
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM users WHERE username = ? COLLATE NOCASE",
+            (uname,)
+        ).fetchone()
+    return bool(row)
+
+
+def db_info() -> Tuple[str, int]:
+    with _connect() as conn:
+        row = conn.execute("SELECT COUNT(*) FROM users").fetchone()
+        cnt = row[0] if row else 0
+    return (str(DB_PATH), int(cnt))
